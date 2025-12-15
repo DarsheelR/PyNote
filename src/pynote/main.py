@@ -81,6 +81,8 @@ class PyNoteApp(tk.Tk):
         self._bind_shortcuts()
         # apply theme after widgets/menu created
         self._apply_theme()
+        # refresh recent files menu
+        self._update_recent_menu()
 
     def _create_widgets(self):
         # Frame to hold line numbers and text
@@ -118,6 +120,10 @@ class PyNoteApp(tk.Tk):
         filemenu.add_command(label='📂 Open', command=self.open_file, accelerator='Ctrl+O')
         filemenu.add_command(label='💾 Save', command=self.save_file, accelerator='Ctrl+S')
         filemenu.add_command(label='💾 Save As', command=self.save_as, accelerator='Ctrl+Shift+S')
+        filemenu.add_separator()
+        # Recent files submenu
+        self._recentmenu = tk.Menu(filemenu, tearoff=0)
+        filemenu.add_cascade(label='Recent Files', menu=self._recentmenu)
         filemenu.add_separator()
         filemenu.add_command(label='Exit', command=self.quit)
         menu.add_cascade(label='File', menu=filemenu)
@@ -183,6 +189,39 @@ class PyNoteApp(tk.Tk):
         if AboutDialog:
             AboutDialog(self)
 
+    def _update_recent_menu(self):
+        """Update Recent Files menu with current list."""
+        self._recentmenu.delete(0, tk.END)
+        files = themes.load_recent_files()
+        if not files:
+            self._recentmenu.add_command(label='(No recent files)', state='disabled')
+        else:
+            for i, filepath in enumerate(files, 1):
+                filename = os.path.basename(filepath)
+                self._recentmenu.add_command(
+                    label=f'{i}. {filename}',
+                    command=lambda p=filepath: self._open_recent(p)
+                )
+
+    def _open_recent(self, filepath):
+        """Open a recent file."""
+        if not self._confirm_discard():
+            return
+        if not os.path.exists(filepath):
+            messagebox.showerror('Error', f'File not found: {filepath}')
+            return
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                data = f.read()
+            self.text.delete('1.0', tk.END)
+            self.text.insert('1.0', data)
+            self._filepath = filepath
+            self.title(f"{APP_TITLE} - {filepath}")
+            themes.add_recent_file(filepath)
+            self._update_recent_menu()
+        except Exception as e:
+            messagebox.showerror('Error', f'Failed to open file: {str(e)}')
+
     def new_file(self):
         if self._confirm_discard():
             self.text.delete('1.0', tk.END)
@@ -203,6 +242,8 @@ class PyNoteApp(tk.Tk):
                 self.text.insert('1.0', data)
                 self._filepath = path
                 self.title(f"{APP_TITLE} - {path}")
+                themes.add_recent_file(path)
+                self._update_recent_menu()
             except Exception as e:
                 messagebox.showerror('Error', f'Failed to open file: {str(e)}')
 

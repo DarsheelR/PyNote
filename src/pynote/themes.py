@@ -88,9 +88,64 @@ def load_theme_pref():
 def save_theme_pref(name='light'):
     """Save theme preference to config file."""
     try:
-        data = {'theme': name}
+        data = _load_config()
+        data['theme'] = name
+        _save_config(data)
+    except Exception:
+        pass
+
+
+def _load_config():
+    """Load the entire config file."""
+    try:
+        if os.path.exists(_CONFIG_PATH):
+            with open(_CONFIG_PATH, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+
+def _save_config(data):
+    """Save the entire config file."""
+    try:
         with open(_CONFIG_PATH, 'w', encoding='utf-8') as f:
             json.dump(data, f)
+    except Exception:
+        pass
+
+
+def load_recent_files():
+    """Load list of recent files from config.
+
+    Returns:
+        list: List of file paths (up to 5)
+    """
+    data = _load_config()
+    return data.get('recent_files', [])
+
+
+def save_recent_files(files):
+    """Save list of recent files to config (max 5)."""
+    try:
+        data = _load_config()
+        data['recent_files'] = files[:5]
+        _save_config(data)
+    except Exception:
+        pass
+
+
+def add_recent_file(filepath):
+    """Add file to recent files list, keep only 5 most recent."""
+    try:
+        files = load_recent_files()
+        # Remove if already exists
+        if filepath in files:
+            files.remove(filepath)
+        # Add to front
+        files.insert(0, filepath)
+        # Keep only 5
+        save_recent_files(files[:5])
     except Exception:
         pass
 
