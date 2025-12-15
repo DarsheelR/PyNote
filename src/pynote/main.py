@@ -97,10 +97,10 @@ class PyNoteApp(tk.Tk):
     def _create_menu(self):
         menu = tk.Menu(self)
         filemenu = tk.Menu(menu, tearoff=0)
-        filemenu.add_command(label='🆕 New', command=self.new_file)
-        filemenu.add_command(label='📂 Open', command=self.open_file)
-        filemenu.add_command(label='💾 Save', command=self.save_file)
-        filemenu.add_command(label='💾 Save As', command=self.save_as)
+        filemenu.add_command(label='🆕 New', command=self.new_file, accelerator='Ctrl+N')
+        filemenu.add_command(label='📂 Open', command=self.open_file, accelerator='Ctrl+O')
+        filemenu.add_command(label='💾 Save', command=self.save_file, accelerator='Ctrl+S')
+        filemenu.add_command(label='💾 Save As', command=self.save_as, accelerator='Ctrl+Shift+S')
         filemenu.add_separator()
         filemenu.add_command(label='Exit', command=self.quit)
         menu.add_cascade(label='File', menu=filemenu)
@@ -117,11 +117,12 @@ class PyNoteApp(tk.Tk):
         self._filemenu = filemenu
         self._viewmenu = viewmenu
 
-#keybord shortcuts
+#keyboard shortcuts
     def _bind_shortcuts(self):
         self.bind('<Control-s>', lambda e: self.save_file())
         self.bind('<Control-o>', lambda e: self.open_file())
         self.bind('<Control-n>', lambda e: self.new_file())
+        self.bind('<Control-Shift-S>', lambda e: self.save_as())
         self.bind('<Control-z>', lambda e: self.text.event_generate('<<Undo>>'))
         self.bind('<Control-y>', lambda e: self.text.event_generate('<<Redo>>'))
 
@@ -202,7 +203,7 @@ class PyNoteApp(tk.Tk):
                 self._filepath = path
                 self.title(f"{APP_TITLE} - {path}")
                 self.text.edit_modified(False)
-                messagebox.showinfo('Saved', 'File saved successfully')
+                messagebox.showinfo('Saved', f'File saved as: {path}')
             except Exception as e:
                 messagebox.showerror('Error', f'Failed to save file: {str(e)}')
 
