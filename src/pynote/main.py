@@ -199,7 +199,13 @@ class PyNoteApp(tk.Tk):
         idx = self.text.index(tk.INSERT).split('.')
         line = idx[0]
         col = idx[1]
-        self.status.set(f'Ln {line}, Col {col}')
+        
+        # Count words and characters
+        text = self.text.get('1.0', tk.END)
+        chars = len(text) - 1  # Exclude trailing newline
+        words = len(text.split()) if text.strip() else 0
+        
+        self.status.set(f'Ln {line}, Col {col} | Words: {words} | Chars: {chars}')
 
     def _confirm_discard(self):
         if self.text.edit_modified():
