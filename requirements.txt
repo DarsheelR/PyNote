@@ -1,8 +1,9 @@
 # PyNote Requirements
 # Minimal dependencies for MVP
 
+pyspellchecker>=0.6.2   # For spell checking feature
+
 # Optional dependencies (uncomment as needed)
-# pyspellchecker>=0.6.2   # For spell checking feature
 # Pillow>=9.0.0           # For image features (if added)
 # markdown>=3.4.0         # For markdown preview
 

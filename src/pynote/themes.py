@@ -150,6 +150,26 @@ def add_recent_file(filepath):
         pass
 
 
+def load_spell_check_pref():
+    """Load spell check preference from config.
+
+    Returns:
+        bool: True if spell check enabled (default True)
+    """
+    data = _load_config()
+    return data.get('spell_check', True)
+
+
+def save_spell_check_pref(enabled):
+    """Save spell check preference to config."""
+    try:
+        data = _load_config()
+        data['spell_check'] = enabled
+        _save_config(data)
+    except Exception:
+        pass
+
+
 def load_tab_width():
     """Load tab width setting from config.
 
