@@ -3,6 +3,10 @@
 Theme definitions for PyNote editor.
 """
 
+import os
+import json
+
+
 LIGHT_THEME = {
     'bg': '#FFFFFF',
     'fg': '#000000',
@@ -58,4 +62,35 @@ def apply_theme(widget, theme):
         selectforeground=theme['select_fg'],
         insertbackground=theme['insert_bg'],
     )
+
+
+_CONFIG_PATH = os.path.join(os.path.expanduser('~'), '.pynote_config.json')
+
+
+def load_theme_pref():
+    """Load saved theme preference from config file.
+
+    Returns:
+        str: 'light' or 'dark' (default 'light')
+    """
+    try:
+        if os.path.exists(_CONFIG_PATH):
+            with open(_CONFIG_PATH, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            name = data.get('theme', 'light')
+            if name.lower() in ('light', 'dark'):
+                return name.lower()
+    except Exception:
+        pass
+    return 'light'
+
+
+def save_theme_pref(name='light'):
+    """Save theme preference to config file."""
+    try:
+        data = {'theme': name}
+        with open(_CONFIG_PATH, 'w', encoding='utf-8') as f:
+            json.dump(data, f)
+    except Exception:
+        pass
 

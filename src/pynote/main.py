@@ -1,6 +1,51 @@
 # src/pynote/main.py
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
+import importlib.util
+import os
+
+
+def _load_themes_module():
+    """Robustly load the `themes` module whether running as package or script.
+
+    Tries several strategies: package import, relative import, loading by file path,
+    then plain import. Raises the last exception if none succeed.
+    """
+    # 1) package import
+    try:
+        from pynote import themes as themes_mod
+        return themes_mod
+    except Exception:
+        pass
+
+    # 2) relative import (when executed as package)
+    try:
+        from . import themes as themes_mod  # type: ignore
+        return themes_mod
+    except Exception:
+        pass
+
+    # 3) load by file path next to this file
+    try:
+        base = os.path.dirname(__file__)
+        path = os.path.join(base, 'themes.py')
+        if os.path.exists(path):
+            spec = importlib.util.spec_from_file_location('pynote.themes', path)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)  # type: ignore
+            return module
+    except Exception:
+        pass
+
+    # 4) plain import as last resort
+    try:
+        import themes as themes_mod
+        return themes_mod
+    except Exception as e:
+        raise e
+
+
+themes = _load_themes_module()
 
 APP_TITLE = "PyNote"
 
@@ -11,9 +56,14 @@ class PyNoteApp(tk.Tk):
         self.title(APP_TITLE)
         self.geometry('800x600')
         self._filepath = None
+        # theme name loaded from persisted config
+        self.theme_name = themes.load_theme_pref()
+
         self._create_widgets()
         self._create_menu()
         self._bind_shortcuts()
+        # apply theme after widgets/menu created
+        self._apply_theme()
 
     def _create_widgets(self):
         # Text widget with scrollbar
@@ -23,11 +73,11 @@ class PyNoteApp(tk.Tk):
         self.vsb.pack(side='right', fill='y')
         self.text.pack(side='left', fill='both', expand=True)
 
-        # status bar
+        # status bar (use tk.Label so colors can be adjusted)
         self.status = tk.StringVar()
         self.status.set('Ln 1, Col 0')
-        status_bar = ttk.Label(self, textvariable=self.status, anchor='w')
-        status_bar.pack(side='bottom', fill='x')
+        self._status_bar = tk.Label(self, textvariable=self.status, anchor='w')
+        self._status_bar.pack(side='bottom', fill='x')
 
         # update cursor position
         self.text.bind('<KeyRelease>', self._update_status)
@@ -43,14 +93,56 @@ class PyNoteApp(tk.Tk):
         filemenu.add_separator()
         filemenu.add_command(label='Exit', command=self.quit)
         menu.add_cascade(label='File', menu=filemenu)
+        # View menu with theme toggle
+        viewmenu = tk.Menu(menu, tearoff=0)
+        self._dark_var = tk.BooleanVar(value=(self.theme_name == 'dark'))
+        viewmenu.add_checkbutton(label='Dark Theme', onvalue=True, offvalue=False,
+                                 variable=self._dark_var, command=self._on_toggle_theme)
+        menu.add_cascade(label='View', menu=viewmenu)
         self.config(menu=menu)
 
+        # keep references for theme updates
+        self._menu = menu
+        self._filemenu = filemenu
+        self._viewmenu = viewmenu
+
+#keybord shortcuts
     def _bind_shortcuts(self):
         self.bind('<Control-s>', lambda e: self.save_file())
         self.bind('<Control-o>', lambda e: self.open_file())
         self.bind('<Control-n>', lambda e: self.new_file())
         self.bind('<Control-z>', lambda e: self.text.event_generate('<<Undo>>'))
         self.bind('<Control-y>', lambda e: self.text.event_generate('<<Redo>>'))
+
+    def _apply_theme(self):
+        theme = themes.get_theme(self.theme_name)
+        # root/background
+        try:
+            self.configure(bg=theme['bg'])
+        except Exception:
+            pass
+        # text widget
+        try:
+            themes.apply_theme(self.text, theme)
+        except Exception:
+            pass
+        # status bar
+        try:
+            self._status_bar.configure(bg=theme['status_bg'], fg=theme['status_fg'])
+        except Exception:
+            pass
+        # menus
+        try:
+            self._menu.configure(bg=theme['gutter_bg'], fg=theme['fg'])
+            self._filemenu.configure(bg=theme['gutter_bg'], fg=theme['fg'])
+            self._viewmenu.configure(bg=theme['gutter_bg'], fg=theme['fg'])
+        except Exception:
+            pass
+
+    def _on_toggle_theme(self):
+        self.theme_name = 'dark' if self._dark_var.get() else 'light'
+        themes.save_theme_pref(self.theme_name)
+        self._apply_theme()
 
     def new_file(self):
         if self._confirm_discard():
