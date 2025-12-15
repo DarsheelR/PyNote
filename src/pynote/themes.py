@@ -149,3 +149,28 @@ def add_recent_file(filepath):
     except Exception:
         pass
 
+
+def load_tab_width():
+    """Load tab width setting from config.
+
+    Returns:
+        int: Tab width in spaces (2, 4, or 8, default 4)
+    """
+    data = _load_config()
+    width = data.get('tab_width', 4)
+    if width not in (2, 4, 8):
+        return 4
+    return width
+
+
+def save_tab_width(width):
+    """Save tab width setting to config."""
+    if width not in (2, 4, 8):
+        return
+    try:
+        data = _load_config()
+        data['tab_width'] = width
+        _save_config(data)
+    except Exception:
+        pass
+

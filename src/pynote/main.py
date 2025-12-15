@@ -75,6 +75,8 @@ class PyNoteApp(tk.Tk):
         self._filepath = None
         # theme name loaded from persisted config
         self.theme_name = themes.load_theme_pref()
+        # tab width setting
+        self.tab_width = themes.load_tab_width()
 
         self._create_widgets()
         self._create_menu()
@@ -132,6 +134,17 @@ class PyNoteApp(tk.Tk):
         self._dark_var = tk.BooleanVar(value=(self.theme_name == 'dark'))
         viewmenu.add_checkbutton(label='Dark Theme', onvalue=True, offvalue=False,
                                  variable=self._dark_var, command=self._on_toggle_theme)
+        viewmenu.add_separator()
+        # Tab width submenu
+        self._tab_var = tk.IntVar(value=self.tab_width)
+        tabmenu = tk.Menu(viewmenu, tearoff=0)
+        tabmenu.add_radiobutton(label='2 spaces', variable=self._tab_var, value=2,
+                                command=lambda: self._set_tab_width(2))
+        tabmenu.add_radiobutton(label='4 spaces', variable=self._tab_var, value=4,
+                                command=lambda: self._set_tab_width(4))
+        tabmenu.add_radiobutton(label='8 spaces', variable=self._tab_var, value=8,
+                                command=lambda: self._set_tab_width(8))
+        viewmenu.add_cascade(label='Tab Width', menu=tabmenu)
         menu.add_cascade(label='View', menu=viewmenu)
         # Help menu with About
         helpmenu = tk.Menu(menu, tearoff=0)
@@ -153,6 +166,8 @@ class PyNoteApp(tk.Tk):
         self.bind('<Control-Shift-S>', lambda e: self.save_as())
         self.bind('<Control-z>', lambda e: self.text.event_generate('<<Undo>>'))
         self.bind('<Control-y>', lambda e: self.text.event_generate('<<Redo>>'))
+        # Tab key to insert spaces
+        self.text.bind('<Tab>', self._insert_tab)
 
     def _apply_theme(self):
         theme = themes.get_theme(self.theme_name)
@@ -221,6 +236,16 @@ class PyNoteApp(tk.Tk):
             self._update_recent_menu()
         except Exception as e:
             messagebox.showerror('Error', f'Failed to open file: {str(e)}')
+
+    def _insert_tab(self, event=None):
+        """Insert spaces instead of tab character."""
+        self.text.insert(tk.INSERT, ' ' * self.tab_width)
+        return 'break'  # Prevent default tab behavior
+
+    def _set_tab_width(self, width):
+        """Change tab width setting."""
+        self.tab_width = width
+        themes.save_tab_width(width)
 
     def new_file(self):
         if self._confirm_discard():
