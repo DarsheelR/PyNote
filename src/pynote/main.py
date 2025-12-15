@@ -66,12 +66,21 @@ class PyNoteApp(tk.Tk):
         self._apply_theme()
 
     def _create_widgets(self):
+        # Frame to hold line numbers and text
+        editor_frame = tk.Frame(self)
+        editor_frame.pack(side='top', fill='both', expand=True)
+        
+        # Line numbers widget
+        self.line_numbers = tk.Text(editor_frame, width=4, padx=5, takefocus=0,
+                                     border=0, bg='#f0f0f0', fg='#666')
+        self.line_numbers.pack(side='left', fill='y')
+        
         # Text widget with scrollbar
-        self.text = tk.Text(self, wrap='word', undo=True)
-        self.vsb = ttk.Scrollbar(self, orient='vertical', command=self.text.yview)
-        self.text.configure(yscrollcommand=self.vsb.set)
-        self.vsb.pack(side='right', fill='y')
+        self.text = tk.Text(editor_frame, wrap='word', undo=True)
+        self.vsb = ttk.Scrollbar(editor_frame, orient='vertical', command=self.text.yview)
+        self.text.configure(yscrollcommand=self._on_text_scroll)
         self.text.pack(side='left', fill='both', expand=True)
+        self.vsb.pack(side='right', fill='y')
 
         # status bar (use tk.Label so colors can be adjusted)
         self.status = tk.StringVar()
@@ -79,9 +88,11 @@ class PyNoteApp(tk.Tk):
         self._status_bar = tk.Label(self, textvariable=self.status, anchor='w')
         self._status_bar.pack(side='bottom', fill='x')
 
-        # update cursor position
+        # update cursor position and line numbers
         self.text.bind('<KeyRelease>', self._update_status)
         self.text.bind('<ButtonRelease>', self._update_status)
+        self.text.bind('<Configure>', self._update_line_numbers)
+        self._update_line_numbers()
 
     def _create_menu(self):
         menu = tk.Menu(self)
@@ -206,6 +217,20 @@ class PyNoteApp(tk.Tk):
         words = len(text.split()) if text.strip() else 0
         
         self.status.set(f'Ln {line}, Col {col} | Words: {words} | Chars: {chars}')
+        self._update_line_numbers()
+
+    def _update_line_numbers(self, event=None):
+        lines = self.text.get('1.0', tk.END).count('\n')
+        line_nums = '\n'.join(str(i) for i in range(1, lines + 1))
+        
+        self.line_numbers.config(state='normal')
+        self.line_numbers.delete('1.0', tk.END)
+        self.line_numbers.insert('1.0', line_nums)
+        self.line_numbers.config(state='disabled')
+
+    def _on_text_scroll(self, first, last):
+        self.vsb.set(first, last)
+        self._update_line_numbers()
 
     def _confirm_discard(self):
         if self.text.edit_modified():
