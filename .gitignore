@@ -1,38 +1,41 @@
-# Python
+# Ignore Python cache and compiled files
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+*.pyc
 
-# Virtual Environment
+# Virtual environments
 .venv/
 venv/
-ENV/
 env/
 
-# IDE
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Editor / IDE
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# Logs and temp
+*.log
+*.bak
+*.tmp
+.tox/
+
+# Logs and temp
+*.log
+*.bak
+*.tmp
 
 # Testing
 .pytest_cache/
