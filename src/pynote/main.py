@@ -4,6 +4,23 @@ from tkinter import filedialog, messagebox, ttk
 import importlib.util
 import os
 
+try:
+    from pynote.ui import AboutDialog
+except Exception:
+    try:
+        from ui import AboutDialog
+    except Exception:
+        # Fallback: load by file path
+        base = os.path.dirname(__file__)
+        path = os.path.join(base, 'ui.py')
+        if os.path.exists(path):
+            spec = importlib.util.spec_from_file_location('pynote.ui', path)
+            ui_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(ui_module)  # type: ignore
+            AboutDialog = ui_module.AboutDialog
+        else:
+            AboutDialog = None
+
 
 def _load_themes_module():
     """Robustly load the `themes` module whether running as package or script.
@@ -110,12 +127,17 @@ class PyNoteApp(tk.Tk):
         viewmenu.add_checkbutton(label='Dark Theme', onvalue=True, offvalue=False,
                                  variable=self._dark_var, command=self._on_toggle_theme)
         menu.add_cascade(label='View', menu=viewmenu)
+        # Help menu with About
+        helpmenu = tk.Menu(menu, tearoff=0)
+        helpmenu.add_command(label='About', command=self._show_about)
+        menu.add_cascade(label='Help', menu=helpmenu)
         self.config(menu=menu)
 
         # keep references for theme updates
         self._menu = menu
         self._filemenu = filemenu
         self._viewmenu = viewmenu
+        self._helpmenu = helpmenu
 
 #keyboard shortcuts
     def _bind_shortcuts(self):
@@ -148,6 +170,7 @@ class PyNoteApp(tk.Tk):
             self._menu.configure(bg=theme['gutter_bg'], fg=theme['fg'])
             self._filemenu.configure(bg=theme['gutter_bg'], fg=theme['fg'])
             self._viewmenu.configure(bg=theme['gutter_bg'], fg=theme['fg'])
+            self._helpmenu.configure(bg=theme['gutter_bg'], fg=theme['fg'])
         except Exception:
             pass
 
@@ -155,6 +178,10 @@ class PyNoteApp(tk.Tk):
         self.theme_name = 'dark' if self._dark_var.get() else 'light'
         themes.save_theme_pref(self.theme_name)
         self._apply_theme()
+
+    def _show_about(self):
+        if AboutDialog:
+            AboutDialog(self)
 
     def new_file(self):
         if self._confirm_discard():
